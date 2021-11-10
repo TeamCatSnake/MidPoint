@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 
-const PG_URI = 'POST-GRES-KEY-HERE'
+const PG_URI = 'postgres://plzsdcte:JKzoTobKKQyPq8iNTAenbqutvMTynW_f@rajje.db.elephantsql.com/plzsdcte'
 
 // create a new pool here using the connection string above
 const pool = new Pool({
