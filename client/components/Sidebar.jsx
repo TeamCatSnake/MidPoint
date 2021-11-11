@@ -22,6 +22,9 @@ const Sidebar = (props) => {
             Welcome back, {props.userName}!
           </p>
         </div>
+        <div className="center"> 
+          <button id="darkButton" onClick={() => props.logOut()}>Log Out</button>
+        </div>
         <div className="flexAlignCenter">
           {/* shows location icon and user location */}
           <img src={imgUrl} className="picStyles" />

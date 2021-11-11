@@ -9,7 +9,6 @@ const Main = (props) => {
         <Sidebar {...props}/>
         <Map {...props}/>
         <div style={{width: '60px'}}>
-          <button onClick={() => props.logOut()}>Log Out</button>
         </div>
       </div>
     )
