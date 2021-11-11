@@ -30,7 +30,6 @@ dbController.verifyUser = async (req, res, next) => {
   // if username / password is empty string / not a string throw error
   const query = `SELECT * FROM users WHERE users.username = $1`;
   const values = [username];
-  console.log("Query", req.query);
   //TEST 'Alan', '123' - but we're just grabbing the username
   try {
     // await query response
@@ -66,7 +65,6 @@ dbController.verifyUser = async (req, res, next) => {
       res.locals.verified = true;
       res.locals.message = "User verified!";
       res.locals.user = user;
-      console.log(res.locals.user);
       //TEST: reached, verifyUser works :). onto getFriendsList
       return next();
     }
@@ -95,18 +93,12 @@ dbController.addUser = async (req, res, next) => {
     const geoData = await geocoder.geocode(address);
     const coordinates = { lat: geoData[0].latitude, lng: geoData[0].longitude };
     //take coordinates and return out prettified address
-    // console.log("GEEEOOODAAATTAAAAA_+_+_+_+_+>", geoData)
     // const prettyStNum = `${geoData[0].streetNumber} `;
     // const prettyStName = `${geoData[0].streetName} `;
     //
     // const prettyCity =  `${geoData[0].city} `;
-    // console.log(geoData)
     // const prettyState = `${geoData[0].administrativeLevels.level1short}`;
-    // console.log(prettyCity)
-    // console.log(prettyState)
-    // console.log(`AINT IT PURRTY?!?!? ====>>>> ${prettyCity}, ${prettyState}`)
     const prettyAddress = geoData[0].formattedAddress;
-    // console.log(`LONG AF ====>> ${geoData[0].formattedAddress}`)
     //getting all the right data + data types before next line runs
     if (typeof username === "string" && typeof password === "string") {
       const encrypted = await bcrypt.hash(password, 10);
@@ -118,9 +110,7 @@ dbController.addUser = async (req, res, next) => {
         prettyAddress,
       ];
       const response = await db.query(query, values);
-      console.log(response);
       const user = response.rows[0];
-      console.log(user);
       res.locals.verified = true;
       res.locals.message = "User created!";
       res.locals.user = user;
@@ -155,10 +145,6 @@ dbController.updateUser = async (req, res, next) => {
 };
 
 dbController.updateLocation = async (req, res, next) => {
-  console.log("****EYE AM INN UPDATELOCATION*****");
-  console.log("REQ BODY====>>>", req.body);
-  console.log("req.query", req.query);
-  console.log("req.params", req.params);
   const { userID, newAddress } = req.body;
   const geoData = await geocoder.geocode(newAddress);
   const coordinates = { lat: geoData[0].latitude, lng: geoData[0].longitude };
@@ -178,9 +164,7 @@ dbController.updateLocation = async (req, res, next) => {
 dbController.getFriendList = async (req, res, next) => {
   // declare a var to store our search query
   // not equal ->  <> OR !=
-  console.log("in getFriendList");
   const { user_id } = res.locals.user;
-  console.log(res.locals.user._id); //undefined!
   const query = `
     SELECT u2.user_id, u2.username, u2.coordinates 
     FROM users u1 JOIN friends 
