@@ -40,7 +40,7 @@ const Sidebar = (props) => {
           ></input>
           <button
             id="changeAddressButton"
-            onClick={() => props.updateLocation(newAddress)}
+            onClick={() => props.updateLocation(props.userID, newAddress)}
           >
             Change
           </button>
