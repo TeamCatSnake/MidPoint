@@ -1,13 +1,13 @@
-const db = require('../models/model');
-const bcrypt = require('bcryptjs');
-const NodeGeocoder = require('node-geocoder');
+const db = require("../models/model");
+const bcrypt = require("bcryptjs");
+const NodeGeocoder = require("node-geocoder");
 
 const dbController = {};
 
 const options = {
-  provider: 'google',
-  apiKey: 'AIzaSyDFChrEvcCz_8xYMlri1GsNKyh2AbsEV1I', //GEOCODING-API-KEY
-}
+  provider: "google",
+  apiKey: "AIzaSyDFChrEvcCz_8xYMlri1GsNKyh2AbsEV1I", //GEOCODING-API-KEY
+};
 
 const geocoder = NodeGeocoder(options);
 // get / verify current user
@@ -30,18 +30,17 @@ dbController.verifyUser = async (req, res, next) => {
   // if username / password is empty string / not a string throw error
   const query = `SELECT * FROM users WHERE users.username = $1`;
   const values = [username];
-  console.log('Query', req.query); 
   //TEST 'Alan', '123' - but we're just grabbing the username
   try {
     // await query response
     const response = await db.query(query, values); //this line reached
-    
+
     // send error if user not found
     if (!response.rows.length) {
       // TODO! - make this an error
       res.status(401);
       res.locals.verified = false;
-      res.locals.message = 'No user found!';
+      res.locals.message = "No user found!";
       res.locals.user = {};
       return next();
     }
@@ -55,7 +54,7 @@ dbController.verifyUser = async (req, res, next) => {
       // TODO! - make this an error
       res.status(401);
       res.locals.verified = false;
-      res.locals.message = 'Invalid password';
+      res.locals.message = "Invalid password";
       res.locals.user = {};
       res.locals.friends = [];
       return next();
@@ -64,9 +63,8 @@ dbController.verifyUser = async (req, res, next) => {
     else {
       res.status(200);
       res.locals.verified = true;
-      res.locals.message = 'User verified!';
+      res.locals.message = "User verified!";
       res.locals.user = user;
-      console.log(res.locals.user)
       //TEST: reached, verifyUser works :). onto getFriendsList
       return next();
     }
@@ -74,7 +72,7 @@ dbController.verifyUser = async (req, res, next) => {
     console.log(err);
     return next(err);
   }
-}
+};
 
 // post/create a new user (encrypt password)
 /* 
@@ -91,41 +89,52 @@ dbController.addUser = async (req, res, next) => {
   try {
     // declare a new user object with name, password, coords
     const { username, password, address } = req.body;
+    //takes in address user typed in and geocodes it to coords
     const geoData = await geocoder.geocode(address);
-    const coordinates = {lat:geoData[0].latitude, lng:geoData[0].longitude};
+    const coordinates = { lat: geoData[0].latitude, lng: geoData[0].longitude };
+    //take coordinates and return out prettified address
+    // const prettyStNum = `${geoData[0].streetNumber} `;
+    // const prettyStName = `${geoData[0].streetName} `;
+    //
+    // const prettyCity =  `${geoData[0].city} `;
+    // const prettyState = `${geoData[0].administrativeLevels.level1short}`;
+    const prettyAddress = geoData[0].formattedAddress;
     //getting all the right data + data types before next line runs
-    if (typeof username === 'string' && typeof password === 'string') {
+    if (typeof username === "string" && typeof password === "string") {
       const encrypted = await bcrypt.hash(password, 10);
-      const query = `INSERT INTO users(username, password, coordinates) VALUES($1, $2, $3) RETURNING *`;
-      const values = [username, encrypted, JSON.stringify(coordinates)];
+      const query = `INSERT INTO users(username, password, coordinates, address) VALUES($1, $2, $3, $4) RETURNING *`;
+      const values = [
+        username,
+        encrypted,
+        JSON.stringify(coordinates),
+        prettyAddress,
+      ];
       const response = await db.query(query, values);
-      console.log(response)
       const user = response.rows[0];
-      console.log(user)
       res.locals.verified = true;
-      res.locals.message = 'User created!'
+      res.locals.message = "User created!";
       res.locals.user = user;
+      res.locals.displayAddress = prettyAddress;
       return next();
     } else {
       res.status(400).send({
         verified: false,
-        message: 'Invalid username and/or password!',
+        message: "Invalid username and/or password!",
         user: {},
-      })
+      });
       return next();
     }
   } catch (err) {
     return next(err);
   }
   //TEST successfully creates user in database with bcrypted password, returns username (but not user ID yet! TODO)
-}
-
+};
 
 // TODO! FINISH THIS METHOD
 // PUT / update a user's data
 dbController.updateUser = async (req, res, next) => {
   const { userID, newCoordinates } = req.body;
-  const query = `UPDATE users SET user.coordinates = $2 WHERE user.user_id = $1`
+  const query = `UPDATE users SET user.coordinates = $2 WHERE user.user_id = $1`;
   const values = [newCoordinates];
   try {
     const response = await db.query(query, values);
@@ -133,15 +142,29 @@ dbController.updateUser = async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
-}
+};
+
+dbController.updateLocation = async (req, res, next) => {
+  const { userID, newAddress } = req.body;
+  const geoData = await geocoder.geocode(newAddress);
+  const coordinates = { lat: geoData[0].latitude, lng: geoData[0].longitude };
+
+  const query = `UPDATE users SET address = $2, coordinates = $3 WHERE user_id = $1 RETURNING *`;
+  const values = [userID, newAddress, coordinates];
+  try {
+    const response = await db.query(query, values);
+    res.locals.user = response.rows[0];
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+};
 
 // get list of all users EXCEPT current user
 dbController.getFriendList = async (req, res, next) => {
   // declare a var to store our search query
   // not equal ->  <> OR !=
-  console.log("in getFriendList")
   const { user_id } = res.locals.user;
-  console.log(res.locals.user._id) //undefined!
   const query = `
     SELECT u2.user_id, u2.username, u2.coordinates 
     FROM users u1 JOIN friends 
@@ -157,10 +180,10 @@ dbController.getFriendList = async (req, res, next) => {
     res.locals.friendList = response.rows;
     return next();
   } catch (err) {
-    console.log("err in friendlist")
+    console.log("err in friendlist");
     return next(err);
   }
-}
+};
 
 // get list of all users not on current user's friends list
 dbController.getNotFriendList = async (req, res, next) => {
@@ -180,24 +203,23 @@ dbController.getNotFriendList = async (req, res, next) => {
     res.locals.notFriendList = response.rows;
     return next();
   } catch (err) {
-    console.log("err in friendlist")
+    console.log("err in friendlist");
     return next(err);
   }
-}
+};
 
 // given an address as a string return the coordinates
 dbController.getCoords = async (req, res, next) => {
   try {
-    const { address } = req.body
+    const { address } = req.body;
     const geoData = await geocoder.geocode(address);
     const coordinates = { lat: geoData[0].latitude, lng: geoData[0].longitude };
     res.locals.coords = coordinates;
     return next();
+  } catch (err) {
+    return next(err);
   }
-  catch (err) {
-    return next(err)
-  }
-}
+};
 
 // adds a new friend to the current users friend list
 /* 
@@ -207,7 +229,7 @@ req.body: { user1_id, user2_id }
 dbController.addFriend = async (req, res, next) => {
   try {
     const { user1_id, user2_id } = req.body;
-    res.locals.user = { user_id: user1_id};
+    res.locals.user = { user_id: user1_id };
     const values = [user1_id, user2_id];
     const query = `
       INSERT INTO friends (user1_id, user2_id) VALUES($1, $2)
@@ -216,11 +238,10 @@ dbController.addFriend = async (req, res, next) => {
     const insert = await db.query(query, values);
     res.locals.insert = insert.rows;
     return next();
-  }
-  catch(err) {
+  } catch (err) {
     return next(err);
   }
-}
+};
 
 // TODOS //
 // DELETE user from friend list
@@ -234,6 +255,5 @@ dbController.addFriend = async (req, res, next) => {
 
 //   }
 // }
-
 
 module.exports = dbController;
