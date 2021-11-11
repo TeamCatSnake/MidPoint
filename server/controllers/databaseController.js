@@ -155,20 +155,23 @@ dbController.updateUser = async (req, res, next) => {
 };
 
 dbController.updateLocation = async (req, res, next) => {
-  console.log("****EYE AM INN UPDATELOCATION*****")
-  console.log("REQ BODY====>>>", req.body)
-  console.log("req.query", req.query)
-  console.log("req.params", req.params)
+  console.log("****EYE AM INN UPDATELOCATION*****");
+  console.log("REQ BODY====>>>", req.body);
+  console.log("req.query", req.query);
+  console.log("req.params", req.params);
   const { userID, newAddress } = req.body;
-  const query = `UPDATE users SET user.address = $2 WHERE user.user_id = $1`;
-  const values = [userID, newAddress];
+  const geoData = await geocoder.geocode(newAddress);
+  const coordinates = { lat: geoData[0].latitude, lng: geoData[0].longitude };
+
+  const query = `UPDATE users SET address = $2, coordinates = $3 WHERE user_id = $1 RETURNING *`;
+  const values = [userID, newAddress, coordinates];
   try {
     const response = await db.query(query, values);
-    res.locals.user = response;
+    res.locals.user = response.rows[0];
     return next();
   } catch (err) {
     return next(err);
-  };
+  }
 };
 
 // get list of all users EXCEPT current user
