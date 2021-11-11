@@ -31,6 +31,14 @@ router.post('/friend', dbController.addFriend, dbController.getFriendList, dbCon
 router.get('/coordinates', dbController.getCoords, (req, res) => {
   return res.status(200).json(res.locals.coords);
 })
+
+//Update Location to new address
+router.put('/updateLocation', dbController.updateLocation, (req, res) => {
+  return rest.status(201).json(res.locals);
+})
+
+
+
 // TODOS //
 
 // add/get/post user to friend list

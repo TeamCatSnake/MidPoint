@@ -15,11 +15,24 @@ export const logOut = () => ({
   type: types.LOG_OUT,
 });
 
-export const updateLocation = (newAddress) => ({
+export const updateLocation = (newAddress, userID) => (dispatch) => {
+  console.log(`>>>>>****I'M IN ACTIONS.JS UPDATE LOCATIONS. so serial`)
   //update to also request that the user coords get updated, send back updated coords and new displayAddress
-  type: types.UPDATE_LOCATION,
-  payload: {newAddress},
-});
+  const request = { 
+    method: 'PUT',
+    url: '/database/updateLocation',
+    data: {userID: userID, newAddress: newAddress}
+  }
+
+  axios.request(request).then((response) => {
+    if (request.status = 201) dispatch({
+      type: types.UPDATE_LOCATION,
+      payload: response.data,
+    });
+  }).catch(console.error);
+};
+
+
 
 export const signUpUser = (username, password, address) => (dispatch) => {
   // const coordinates = {lat, lng}  
